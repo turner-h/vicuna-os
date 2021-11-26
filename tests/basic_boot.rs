@@ -7,33 +7,19 @@
 use vicuna_os::println;
 use core::panic::PanicInfo;
 
-#[no_mangle]
+#[no_mangle] 
 pub extern "C" fn _start() -> ! {
-    println!("Hello World{}", "!");
-
-    vicuna_os::init();
-
-    #[cfg(test)]
     test_main();
 
-    println!("It did not crash!");
-    vicuna_os::hlt_loop();
+    loop {}
 }
 
-#[cfg(not(test))]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
-    vicuna_os::hlt_loop();
-}
-
-#[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     vicuna_os::test_panic_handler(info)
 }
 
 #[test_case]
-fn trivial_assertion() {
-    assert_eq!(1, 1);
+fn test_println() {
+    println!("test_println output");
 }
