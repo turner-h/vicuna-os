@@ -6,11 +6,17 @@
 #![reexport_test_harness_main = "test_main"]
 
 use core::panic::PanicInfo;
+#[cfg(test)]
+use bootloader::{ entry_point, BootInfo };
 
 pub mod gdt;
 pub mod interrupts;
 pub mod serial;
 pub mod vga_buffer;
+pub mod memory;
+
+#[cfg(test)]
+entry_point!(test_kernel_main);
 
 pub fn init() {
     gdt::init();
@@ -73,7 +79,7 @@ pub fn hlt_loop() -> ! {
 /// Entry point for `cargo xtest`
 #[cfg(test)]
 #[no_mangle]
-pub extern "C" fn _start() -> ! {
+fn test_kernel_main(boot_info: &'static BootInfo) -> ! {
     init();
     test_main();
     hlt_loop();

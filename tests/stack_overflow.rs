@@ -14,7 +14,6 @@ pub extern "C" fn _start() -> ! {
     vicuna_os::gdt::init();
     init_test_idt();
 
-    // trigger a stack overflow
     stack_overflow();
 
     panic!("Execution continued after stack overflow");

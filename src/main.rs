@@ -4,14 +4,29 @@
 #![test_runner(vicuna_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-use vicuna_os::println;
+use bootloader::{ BootInfo, entry_point };
+use vicuna_os::{memory::active_level_4_page_table, println};
 use core::panic::PanicInfo;
+use x86_64::VirtAddr;
+
+entry_point!(kernel_main);
 
 #[no_mangle]
-pub extern "C" fn _start() -> ! {
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
     println!("Hello World{}", "!");
 
     vicuna_os::init();
+
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let l4_table = unsafe { active_level_4_page_table(phys_mem_offset); };
+
+    println!("{:?}", l4_table);
+
+    for (i, entry) in l4_table.iter().enumerate() {
+        if !entry.is_unused() {
+            println!("L4 Entry {}: {:?}", i, entry);
+        }
+    }
 
     #[cfg(test)]
     test_main();
