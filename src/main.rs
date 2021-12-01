@@ -5,9 +5,11 @@
 #![reexport_test_harness_main = "test_main"]
 
 use bootloader::{ BootInfo, entry_point };
+use vicuna_os::memory::translate_addr;
 use vicuna_os::{memory::active_level_4_page_table, println};
 use core::panic::PanicInfo;
 use x86_64::VirtAddr;
+use x86_64::structures::paging::PageTable;
 
 entry_point!(kernel_main);
 
@@ -18,14 +20,17 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     vicuna_os::init();
 
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
-    let l4_table = unsafe { active_level_4_page_table(phys_mem_offset); };
+    let addresses = [
+        0xb8000,
+        0x201008,
+        0x0100_0020_1a10,
+        boot_info.physical_memory_offset,
+    ];
 
-    println!("{:?}", l4_table);
-
-    for (i, entry) in l4_table.iter().enumerate() {
-        if !entry.is_unused() {
-            println!("L4 Entry {}: {:?}", i, entry);
-        }
+    for &address in &addresses {
+        let virt = VirtAddr::new(address);
+        let phys = unsafe { translate_addr(virt, phys_mem_offset) };
+        println!("{:?} -> {:?}", virt, phys);
     }
 
     #[cfg(test)]
