@@ -4,12 +4,15 @@
 #![test_runner(vicuna_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+extern crate alloc;
+
 use bootloader::{ BootInfo, entry_point };
-use vicuna_os::memory::translate_addr;
-use vicuna_os::{memory::active_level_4_page_table, println};
+use vicuna_os::println;
+use vicuna_os::allocator;
+use vicuna_os::memory::{self, BootInfoFrameAllocator};
 use core::panic::PanicInfo;
+use alloc::boxed::Box;
 use x86_64::VirtAddr;
-use x86_64::structures::paging::PageTable;
 
 entry_point!(kernel_main);
 
@@ -20,18 +23,15 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     vicuna_os::init();
 
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
-    let addresses = [
-        0xb8000,
-        0x201008,
-        0x0100_0020_1a10,
-        boot_info.physical_memory_offset,
-    ];
+    let mut mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut frame_allocator = unsafe {
+        BootInfoFrameAllocator::init(&boot_info.memory_map)
+    };
 
-    for &address in &addresses {
-        let virt = VirtAddr::new(address);
-        let phys = unsafe { translate_addr(virt, phys_mem_offset) };
-        println!("{:?} -> {:?}", virt, phys);
-    }
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap init failed");
+
+    let heap_value = Box::new(41);
+    println!("heap value: {:?}", heap_value);
 
     #[cfg(test)]
     test_main();

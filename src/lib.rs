@@ -2,8 +2,11 @@
 #![cfg_attr(test, no_main)]
 #![feature(custom_test_frameworks)]
 #![feature(abi_x86_interrupt)]
+#![feature(alloc_error_handler)]
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
+
+extern crate alloc;
 
 use core::panic::PanicInfo;
 #[cfg(test)]
@@ -14,6 +17,7 @@ pub mod interrupts;
 pub mod serial;
 pub mod vga_buffer;
 pub mod memory;
+pub mod allocator;
 
 #[cfg(test)]
 entry_point!(test_kernel_main);
@@ -76,10 +80,15 @@ pub fn hlt_loop() -> ! {
     }
 }
 
+#[alloc_error_handler]
+fn alloc_error_handler(layout: alloc::alloc::Layout) -> ! {
+    panic!("{:?}", layout);
+}
+
 /// Entry point for `cargo xtest`
 #[cfg(test)]
 #[no_mangle]
-fn test_kernel_main(boot_info: &'static BootInfo) -> ! {
+fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
     init();
     test_main();
     hlt_loop();
