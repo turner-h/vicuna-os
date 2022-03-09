@@ -6,10 +6,14 @@
 
 extern crate alloc;
 
-use bootloader::{ BootInfo, entry_point };
 use vicuna_os::println;
 use vicuna_os::allocator;
 use vicuna_os::memory::{self, BootInfoFrameAllocator};
+use vicuna_os::task::Task; 
+use vicuna_os::task::executor::Executor;
+use vicuna_os::task::keyboard;
+
+use bootloader::{ BootInfo, entry_point };
 use core::panic::PanicInfo;
 use alloc::boxed::Box;
 use x86_64::VirtAddr;
@@ -33,11 +37,25 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     let heap_value = Box::new(41);
     println!("heap value: {:?}", heap_value);
 
+    let mut executor = Executor::new();
+    executor.spawn(Task::new(example_task()));
+    executor.spawn(Task::new(keyboard::print_keypresses()));
+    executor.run();
+
     #[cfg(test)]
     test_main();
 
     println!("It did not crash!");
     vicuna_os::hlt_loop();
+}
+
+async fn async_number() -> u32 {
+    42
+}
+
+async fn example_task() {
+    let number = async_number().await;
+    println!("async value: {}", number);
 }
 
 #[cfg(not(test))]
