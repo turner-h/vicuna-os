@@ -11,5 +11,7 @@ After these things I can start looking at user-space things.
 
 ## Resources
 [Writing an OS in Rust](https://os.phil-opp.com/)
+
 The whole [OS Dev Wiki](https://wiki.osdev.org/Expanded_Main_Page)
+
 Frantic google searches
