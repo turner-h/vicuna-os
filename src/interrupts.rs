@@ -13,6 +13,7 @@ pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
 pub enum InterruptIndex {
     Timer = PIC_1_OFFSET,
     Keyboard,
+    Ata = 46,
 }
 
 impl InterruptIndex {
@@ -39,9 +40,10 @@ lazy_static! {
         }
         idt[InterruptIndex::Timer.as_usize()].set_handler_fn(timer_interrupt_handler);
         idt[InterruptIndex::Keyboard.as_usize()].set_handler_fn(keyboard_interrupt_handler);
+        idt[InterruptIndex::Ata.as_usize()].set_handler_fn(ata_interrupt_handler);
         
         idt.page_fault.set_handler_fn(page_fault_handler);
-        
+
         idt
     };
 }
@@ -64,8 +66,7 @@ extern "x86-interrupt" fn double_fault_handler(
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
     //print!(".");
     unsafe {
-        PICS.lock()
-            .notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
+        PICS.lock().notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
     }
 }
 
@@ -78,8 +79,16 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     crate::task::keyboard::add_scancode(scancode);
 
     unsafe {
-        PICS.lock()
-            .notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());
+        PICS.lock().notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());
+    }
+}
+
+extern "x86-interrupt" fn ata_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    unsafe{ crate::ata::read_port(); }
+
+    print!(".");
+    unsafe {
+        PICS.lock().notify_end_of_interrupt(InterruptIndex::Ata.as_u8());
     }
 }
 

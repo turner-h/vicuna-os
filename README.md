@@ -4,7 +4,7 @@ vicuna-os is an operating system project that I'm making because I'm bored. The 
 
 ## To do
 - [ ] Preemtive multitasking via threads
-- [ ] A more customizable bootloader (write one from scratch or break an existant one)
+- [ ] ~~A more customizable bootloader (write one from scratch or break an existant one)~~
 - [ ] Baby filesystem support
 
 After these things I can start looking at user-space things.

@@ -12,10 +12,12 @@ use vicuna_os::memory::{self, BootInfoFrameAllocator};
 use vicuna_os::task::Task; 
 use vicuna_os::task::executor::Executor;
 use vicuna_os::task::keyboard;
+use vicuna_os::ata;
 
 use bootloader::{ BootInfo, entry_point };
 use core::panic::PanicInfo;
 use alloc::boxed::Box;
+use alloc::string::{ToString, String};
 use x86_64::VirtAddr;
 
 entry_point!(kernel_main);
@@ -35,7 +37,14 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap init failed");
 
     let heap_value = Box::new(41);
-    println!("heap value: {:?}", heap_value);
+    println!("heap value: {:?}", heap_value); 
+
+    unsafe{ 
+        ata::send_write_master(0x00000000, 1); 
+        println!("???");
+        let buf = ata::send_read_master(0x00000000, 1); 
+        println!("{:?}", buf);
+    }
 
     let mut executor = Executor::new();
     executor.spawn(Task::new(example_task()));
