@@ -1,4 +1,4 @@
-use crate::{gdt, print, println, hlt_loop};
+use crate::{gdt, println, hlt_loop};
 use lazy_static::lazy_static;
 use pic8259::ChainedPics;
 use spin;
@@ -86,7 +86,6 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
 extern "x86-interrupt" fn ata_interrupt_handler(_stack_frame: InterruptStackFrame) {
     unsafe{ crate::ata::read_port(); }
 
-    print!(".");
     unsafe {
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Ata.as_u8());
     }

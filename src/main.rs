@@ -6,6 +6,8 @@
 
 extern crate alloc;
 
+use alloc::borrow::ToOwned;
+use alloc::format;
 use vicuna_os::println;
 use vicuna_os::allocator;
 use vicuna_os::memory::{self, BootInfoFrameAllocator};
@@ -18,6 +20,7 @@ use bootloader::{ BootInfo, entry_point };
 use core::panic::PanicInfo;
 use alloc::boxed::Box;
 use alloc::string::{ToString, String};
+use alloc::vec::Vec;
 use x86_64::VirtAddr;
 
 entry_point!(kernel_main);
@@ -40,14 +43,25 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     println!("heap value: {:?}", heap_value); 
 
     unsafe{ 
-        ata::send_write_master(0x00000000, 1); 
-        println!("???");
-        let buf = ata::send_read_master(0x00000000, 1); 
-        println!("{:?}", buf);
+        //ata::send_write_master(0x0FFFFFFE, 1); 
+        let buf = ata::send_read_master(0, 1); 
+        let mut hex_str = "".to_string();
+
+        let mut split_buf: Vec<u8> = Vec::new();
+        for val in buf {
+            let val_bytes = val.to_be_bytes();
+            split_buf.push(val_bytes[0]);
+            split_buf.push(val_bytes[1]);
+        }
+
+        for val in &split_buf[0x1BE..0x1FE]{
+            hex_str = hex_str + format!("{:X}", val).to_string().as_str() + " ";
+        }
+        println!("{:?}", hex_str);
     }
 
     let mut executor = Executor::new();
-    executor.spawn(Task::new(example_task()));
+    //executor.spawn(Task::new(example_task()));
     executor.spawn(Task::new(keyboard::print_keypresses()));
     executor.run();
 
