@@ -13,7 +13,7 @@ extern crate alloc;
 
 use core::panic::PanicInfo;
 #[cfg(test)]
-use bootloader::{ entry_point, BootInfo };
+use bootloader_api::{ BootInfo, entry_point };
 
 pub mod gdt;
 pub mod interrupts;
@@ -93,7 +93,7 @@ fn alloc_error_handler(layout: alloc::alloc::Layout) -> ! {
 /// Entry point for `cargo xtest`
 #[cfg(test)]
 #[no_mangle]
-fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
+fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     init();
     test_main();
     hlt_loop();

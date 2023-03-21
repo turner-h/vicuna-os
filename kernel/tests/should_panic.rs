@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use vicuna_os::{exit_qemu, serial_print, serial_println, QemuExitCode};
+use kernel::{exit_qemu, serial_print, serial_println, QemuExitCode};
 use core::panic::PanicInfo;
 
 #[no_mangle]

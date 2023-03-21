@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(custom_test_frameworks)]
-#![test_runner(vicuna_os::test_runner)]
+#![test_runner(kernel::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
 extern crate alloc;
@@ -9,23 +9,23 @@ extern crate alloc;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-use bootloader::{entry_point, BootInfo};
+use bootloader_api::{entry_point, BootInfo};
 use core::panic::PanicInfo;
 use x86_64::VirtAddr;
 
-use vicuna_os::allocator;
-use vicuna_os::allocator::HEAP_SIZE;
-use vicuna_os::memory::{self, BootInfoFrameAllocator};
+use kernel::allocator;
+use kernel::allocator::HEAP_SIZE;
+use kernel::memory::{self, BootInfoFrameAllocator};
 
 entry_point!(main);
 
-fn main(boot_info: &'static BootInfo) -> ! {
-    vicuna_os::init();
+fn main(boot_info: &'static mut BootInfo) -> ! {
+    kernel::init();
 
-    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset.into_option().unwrap());
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
     let mut frame_allocator = unsafe {
-        BootInfoFrameAllocator::init(&boot_info.memory_map)
+        BootInfoFrameAllocator::init(&boot_info.memory_regions)
     };
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap init failed");
@@ -36,7 +36,7 @@ fn main(boot_info: &'static BootInfo) -> ! {
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    vicuna_os::test_panic_handler(info)
+    kernel::test_panic_handler(info)
 }
 
 #[test_case]

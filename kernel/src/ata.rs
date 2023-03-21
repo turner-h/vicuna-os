@@ -1,8 +1,6 @@
 use alloc::vec::Vec;
 use x86_64::structures::port::{ PortWrite, PortRead };
 
-use crate::println;
-
 static mut BUFFER: Vec<u16> = Vec::new();
 
 pub unsafe fn send_read_master(lba_addr: u32, count: u8) -> Vec<u16> {
