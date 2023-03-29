@@ -13,7 +13,7 @@ extern crate alloc;
 
 use core::panic::PanicInfo;
 #[cfg(test)]
-use bootloader_api::{ BootInfo, entry_point };
+use bootloader_api::entry_point;
 
 pub mod gdt;
 pub mod interrupts;
@@ -23,6 +23,7 @@ pub mod memory;
 pub mod allocator;
 pub mod task;
 pub mod ata;
+pub mod framebuffer;
 
 #[cfg(test)]
 entry_point!(test_kernel_main);
@@ -42,14 +43,14 @@ where
     T: Fn(),
 {
     fn run(&self) {
-        serial_print!("{}...\t", core::any::type_name::<T>());
+        //serial_print!("{}...\t", core::any::type_name::<T>());
         self();
-        serial_println!("[ok]");
+        //serial_println!("[ok]");
     }
 }
 
 pub fn test_runner(tests: &[&dyn Testable]) {
-    serial_println!("Running {} tests", tests.len());
+    //serial_println!("Running {} tests", tests.len());
     for test in tests {
         test.run();
     }
@@ -57,8 +58,8 @@ pub fn test_runner(tests: &[&dyn Testable]) {
 }
 
 pub fn test_panic_handler(info: &PanicInfo) -> ! {
-    serial_println!("[failed]\n");
-    serial_println!("Error: {}\n", info);
+    //serial_println!("[failed]\n");
+    //serial_println!("Error: {}\n", info);
     exit_qemu(QemuExitCode::Failed);
     hlt_loop();
 }
@@ -93,7 +94,7 @@ fn alloc_error_handler(layout: alloc::alloc::Layout) -> ! {
 /// Entry point for `cargo xtest`
 #[cfg(test)]
 #[no_mangle]
-fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
+fn test_kernel_main(boot_info: &mut BootInfo) -> ! {
     init();
     test_main();
     hlt_loop();

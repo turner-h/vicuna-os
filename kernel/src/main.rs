@@ -6,7 +6,7 @@
 
 extern crate alloc;
 
-use alloc::format;
+use kernel::framebuffer;
 use kernel::println;
 use kernel::allocator;
 use kernel::memory::{self, BootInfoFrameAllocator};
@@ -18,11 +18,18 @@ use kernel::ata;
 
 use bootloader_api::{ BootInfo, entry_point };
 use bootloader_api::config::{ BootloaderConfig, Mapping };
+use bootloader_api::info::FrameBufferInfo;
+
+use core::slice;
 use core::panic::PanicInfo;
+
 use alloc::boxed::Box;
-use alloc::string::{ToString, String};
+use alloc::string::ToString;
 use alloc::vec::Vec;
+use alloc::format;
+
 use x86_64::VirtAddr;
+use x86_64::structures::port::{ PortRead };
 
 pub static BOOTLOADER_CONFIG: BootloaderConfig = {
     let mut config = BootloaderConfig::new_default();
@@ -30,14 +37,13 @@ pub static BOOTLOADER_CONFIG: BootloaderConfig = {
     config
 };
 
-entry_point!(kernel_main);
+entry_point!(kernel_main, config = &BOOTLOADER_CONFIG);
 
 #[no_mangle]
 fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    //println!("Hello World{}", "!");
-    serial_println!("we made it to kernel_main");
-
     kernel::init();
+
+    serial_println!("we in that kernel_main fr");
 
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset.into_option().unwrap());
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
@@ -45,13 +51,22 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
         BootInfoFrameAllocator::init(&boot_info.memory_regions)
     };
 
+    let info = FrameBufferInfo::from(boot_info.framebuffer.as_ref().unwrap().info());
+    let buf_ptr = boot_info.framebuffer.as_mut().unwrap().buffer().as_ptr();
+    let buf_len = boot_info.framebuffer.as_ref().unwrap().buffer().len();
+    let buf: &'static mut [u8] = unsafe { slice::from_raw_parts_mut(buf_ptr.cast_mut(), buf_len) };
+
+    framebuffer::init(buf.as_mut(), info);
+
+    println!("Hello World{}", "!");
+
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap init failed");
 
     let heap_value = Box::new(41);
-    println!("heap value: {:?}", heap_value); 
+    println!("heap value: {:?}", heap_value);
 
-    unsafe{ 
-        //ata::send_write_master(0x0FFFFFFE, 1); 
+    unsafe{
+        //ata::send_write_master(0x00000000, 1);
         let buf = ata::send_read_master(0, 1); 
         let mut hex_str = "".to_string();
 
@@ -69,7 +84,7 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     }
 
     let mut executor = Executor::new();
-    //executor.spawn(Task::new(example_task()));
+    executor.spawn(Task::new(example_task()));
     executor.spawn(Task::new(keyboard::print_keypresses()));
     executor.run();
 
@@ -92,6 +107,11 @@ async fn example_task() {
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
+    unsafe {
+        serial_println!("Port A: {:b}", <u16 as PortRead>::read_from_port(0x92));
+        serial_println!("Port B: {:b}", <u16 as PortRead>::read_from_port(0x61));
+    }
+    serial_println!("{}", info);
     println!("{}", info);
     kernel::hlt_loop();
 }

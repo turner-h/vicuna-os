@@ -4,6 +4,8 @@ use x86_64::structures::gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector
 use x86_64::structures::tss::TaskStateSegment;
 use x86_64::VirtAddr;
 
+use crate::serial_println;
+
 pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 
 lazy_static! {
@@ -42,11 +44,13 @@ struct Selectors {
 }
 
 pub fn init() {
-    use x86_64::instructions::segmentation::CS;
+    use x86_64::instructions::segmentation::{ CS, SS};
     use x86_64::instructions::tables::load_tss;
 
     GDT.0.load();
     unsafe {
+        serial_println!("ss: {:?}",SS::get_reg());
+        SS::set_reg(SegmentSelector::new(0, x86_64::PrivilegeLevel::Ring0));
         CS::set_reg(GDT.1.code_selector);
         load_tss(GDT.1.tss_selector);
     }
